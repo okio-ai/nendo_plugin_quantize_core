@@ -93,14 +93,20 @@ class CoreQuantizer(NendoGeneratePlugin):
 
         track_title = f"{track.resource.meta['original_filename']} - Quantized" if "original_filename" in track.resource.meta else f"Quantized"
 
-        return self.nendo_instance.library.add_related_track_from_signal(
+        streched_track = self.nendo_instance.library.add_related_track_from_signal(
             signal=strechedaudio,
             sr=int(track.sr),
             related_track_id=track.id,
             track_type="quantized",
             relationship_type="quantized",
             track_meta={
-                "bpm": int(bpm),
                 "title": track_title,
             },
+        )
+
+        return streched_track.add_plugin_data(
+            plugin_name="nendo_plugin_quantize_core",
+            plugin_version="0.1.1",
+            key="tempo",
+            value=str(bpm),
         )

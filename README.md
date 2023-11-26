@@ -26,7 +26,7 @@ Audio quantization with grid detection and time-stretching
 This plugin requires the `rubberband` package to be installed in your system. Please refer to the [rubberband documentation](https://breakfastquay.com/rubberband/index.html) for further information.
 
 1. [Install Nendo](https://github.com/okio-ai/nendo#installation)
-2. `pip install nendo-plugin-core-quantizer`
+2. `pip install nendo-plugin-quantize-core`
 
 ## Usage
 

@@ -130,7 +130,7 @@ class CoreQuantizer(NendoGeneratePlugin):
         track: NendoTrack,
         bpm: int = 120,
         keep_original_bpm: bool = settings.keep_original_bpm,
-    ) -> Tuple[float, float]:
+    ) -> NendoTrack:
         """Run the quantizer plugin.
 
         Args:

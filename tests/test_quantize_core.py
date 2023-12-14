@@ -9,7 +9,8 @@ nd = Nendo(
         library_path="./library",
         log_level="INFO",
         plugins=["nendo_plugin_quantize_core"],
-    )
+        copy_to_library=False,
+    ),
 )
 
 
@@ -18,11 +19,11 @@ class QuantizePluginTests(unittest.TestCase):
         nd.library.reset(force=True)
         track = nd.library.add_track(file_path="tests/assets/test.wav")
         quantized_track = nd.plugins.quantize_core(track=track, bpm=110)
-        pd = quantized_track.get_plugin_data("nendo_plugin_quantize_core")
+        pd = quantized_track.get_plugin_data(plugin_name="nendo_plugin_quantize_core", key="tempo")
 
         self.assertTrue(quantized_track.has_relationship_to(track.id))
-        self.assertEqual(type(pd), str)
-        self.assertTrue(pd, "110")
+        self.assertEqual(type(pd), list)
+        self.assertTrue(pd[0].value, "110")
 
     def test_run_process_plugin_fixed_bpm(self):
         nd.library.reset(force=True)

@@ -6,7 +6,7 @@ import unittest
 
 nd = Nendo(
     config=NendoConfig(
-        library_path="./library",
+        library_path="./tests/library",
         log_level="INFO",
         plugins=["nendo_plugin_quantize_core"],
         copy_to_library=False,
@@ -24,6 +24,7 @@ class QuantizePluginTests(unittest.TestCase):
         self.assertTrue(quantized_track.has_relationship_to(track.id))
         self.assertEqual(type(pd), list)
         self.assertTrue(pd[0].value, "110")
+        self.assertEqual(quantized_track.signal.shape[0], 2)
 
     def test_run_process_plugin_fixed_bpm(self):
         nd.library.reset(force=True)

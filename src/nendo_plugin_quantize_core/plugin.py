@@ -147,12 +147,12 @@ class CoreQuantizer(NendoGeneratePlugin):
             keep_bpm = keep_original_bpm or settings.keep_original_bpm
 
         # Transpose signal and take the first channel
-        signal = track.signal
         sr = track.sr
-        signal = signal[0] if len(signal.shape) > 1 else signal
+        left_channel = track.signal[0, :] if len(track.signal.shape) > 1 else track.signal
+        right_channel = track.signal[1, :] if len(track.signal.shape) > 1 else track.signal
 
-        # Extract beat
-        tempo, beat_frames = self.extract_beat_essentia(signal, sr)
+        # Use left channel for beat extraction
+        tempo, beat_frames = self.extract_beat_essentia(left_channel, track.sr)
 
         # flag determines whether to keep the original bpm
         bpm = tempo if keep_bpm else bpm
@@ -160,21 +160,39 @@ class CoreQuantizer(NendoGeneratePlugin):
         # Generate scaling factor based on original and target tempo
         scale = tempo / bpm
 
-        # Construct time map using numpy
-        time_map = self.construct_time_map(beat_frames, scale, len(signal))
+        # Construct time of left channel map using numpy
+        time_map = self.construct_time_map(beat_frames, scale, len(left_channel))
 
-        # Time stretch audio
-        streched_signal = pyrb.timemap_stretch(signal, sr, time_map)
+        # Time stretch left channel
+        streched_left_channel = pyrb.timemap_stretch(left_channel, sr, time_map)
 
         # Time stretch to original length, rounded to nearest beat
-        duration = len(streched_signal) / sr
+        duration = len(streched_left_channel) / sr
         rounded_duration = math.ceil(duration)
         sequence = self.sequence_generator(rounded_duration)
         nearest_value = min(sequence, key=lambda x: abs(x - rounded_duration))
-        length_ratio = len(streched_signal) / (nearest_value * sr)
+        length_ratio = len(streched_left_channel) / (nearest_value * sr)
 
         # Preallocate final_audio for performance
-        streched_signal = pyrb.time_stretch(streched_signal, sr, length_ratio)
+        streched_left_channel = pyrb.time_stretch(streched_left_channel, sr, length_ratio)
+
+        # Construct time of left channel map using numpy
+        time_map = self.construct_time_map(beat_frames, scale, len(right_channel))
+
+        # Time stretch right channel
+        streched_right_channel = pyrb.timemap_stretch(right_channel, sr, time_map)
+
+        # Time stretch to original length, rounded to nearest beat
+        duration = len(streched_right_channel) / sr
+        rounded_duration = math.ceil(duration)
+        sequence = self.sequence_generator(rounded_duration)
+        nearest_value = min(sequence, key=lambda x: abs(x - rounded_duration))
+        length_ratio = len(streched_right_channel) / (nearest_value * sr)
+
+        # Preallocate final_audio for performance
+        streched_right_channel = pyrb.time_stretch(streched_right_channel, sr, length_ratio)
+
+        streched_signal = np.array([streched_left_channel, streched_right_channel], dtype="float32")
 
         track_title = (
             f"{track.resource.meta['original_filename']} - Quantized"

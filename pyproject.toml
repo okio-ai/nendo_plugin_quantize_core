@@ -41,7 +41,8 @@ nendo = "^0.1.2"
 pydantic = { version = "^2.0.0, <2.5.0" }
 pydantic-settings = "^2.1.0"
 pyrubberband = "^0.3.0"
-essentia = "^2.1b6.dev1110"
+BeatNet = "^1.1.3"
+PyAudio = "^0.2.14"
 
 [tool.poetry.group.lint.dependencies]
 black = "^23.1.0"

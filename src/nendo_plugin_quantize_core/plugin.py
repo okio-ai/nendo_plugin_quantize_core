@@ -3,7 +3,6 @@ import math
 from logging import Logger
 from typing import List
 
-import essentia.standard as es
 import librosa
 import numpy as np
 import pyrubberband as pyrb

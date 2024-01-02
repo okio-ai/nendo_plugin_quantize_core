@@ -112,33 +112,6 @@ class CoreQuantizer(NendoGeneratePlugin):
 
         return tempo, beat_frames
 
-    # def extract_beat_essentia(self, y, sr):
-    #     """Extracts beat from a given audio signal and converts beats to frames.
-
-    #     Args:
-    #         y: The audio signal.
-    #         sr: The sample rate.
-
-    #     Returns:
-    #         A tuple of (tempo, beat_frames).
-    #     """
-    #     rhythm_extractor = es.RhythmExtractor2013(method="multifeature")
-    #     bpm, beats, beats_confidence, _, _ = rhythm_extractor(y)
-
-    #     # Convert beats to frames
-    #     # (Essentia's RhythmExtractor2013 returns beats in seconds)
-    #     beat_frames = (beats * sr).astype(int)
-
-    #     # Ensure unique beat frames
-    #     beat_frames = np.unique(beat_frames)
-
-    #     # Ensure monotonic beat frames
-    #     beat_frames_diff = np.diff(beat_frames)
-    #     if np.any(beat_frames_diff <= 0):
-    #         beat_frames = beat_frames_diff.cumsum()
-
-    #     return bpm, beat_frames
-
     def construct_time_map(
         self,
         beat_frames: np.ndarray,

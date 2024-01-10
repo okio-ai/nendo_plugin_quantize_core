@@ -162,7 +162,7 @@ class CoreQuantizer(NendoGeneratePlugin):
         right_channel = track.signal[1, :] if len(track.signal.shape) > 1 else track.signal
 
         # Use left channel for beat extraction
-        tempo, beat_frames = self.extract_beat_beatnet(track.resource.src)
+        tempo, beat_frames = self.extract_beat_beatnet(track.local())
 
         # flag determines whether to keep the original bpm
         bpm = tempo if keep_bpm else bpm

@@ -4,7 +4,7 @@ from distutils.core import setup
 if __name__ == "__main__":
     setup(
         name="nendo-plugin-quantize-core",
-        version="0.2.0",
+        version="0.2.1",
         description="Nendo core quantizer plugin",
         author="Okio Team <team@okio.ai>",
     )

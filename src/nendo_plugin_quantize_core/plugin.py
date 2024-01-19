@@ -1,7 +1,7 @@
 """A nendo core plugin for music quantization."""
 import math
 from logging import Logger
-from typing import List
+from typing import List, Optional
 
 import librosa
 import numpy as np
@@ -52,29 +52,6 @@ class CoreQuantizer(NendoGeneratePlugin):
         power = int(np.log2(duration))
         yield from 2 ** np.arange(power, 0, -1)
 
-    def extract_beat(self, y, sr):
-        """Extracts beat from a given audio signal and converts beats to frames.
-
-        Args:
-            y: The audio signal.
-            sr: The sample rate.
-
-        Returns:
-            A tuple of (tempo, beat_frames).
-        """
-        _, y_percussive = librosa.effects.hpss(y)
-
-        # Beat Track: Simple
-        tempo, beats = librosa.beat.beat_track(y=y_percussive, sr=sr, trim=False)
-
-        # Beat track: Complex
-        # tempo, beats = librosa.beat.beat_track(
-        #     sr=sr, onset_envelope=librosa.onset.onset_strength(y=y_percussive, sr=sr), trim=False)
-
-        beat_frames = librosa.frames_to_samples(beats)
-
-        return tempo, beat_frames
-
     def extract_beat_beatnet(self, filename: str):
         """Extracts beat from a given audio signal and converts beats to frames.
 
@@ -90,6 +67,7 @@ class CoreQuantizer(NendoGeneratePlugin):
             inference_model="DBN",
             plot=[],
             thread=False,
+            device="cuda" if settings.use_gpu is True else "cpu",
         )
         beat_frames = estimator.process(filename)
         # result is a vector including beat times and downbeat identifier columns
@@ -139,7 +117,7 @@ class CoreQuantizer(NendoGeneratePlugin):
         self,
         track: NendoTrack,
         bpm: int = 120,
-        keep_original_bpm: bool = settings.keep_original_bpm,
+        keep_original_bpm: Optional[bool] = None,
     ) -> NendoTrack:
         """Run the quantizer plugin.
 
@@ -151,10 +129,7 @@ class CoreQuantizer(NendoGeneratePlugin):
         Returns:
             NendoTrack: The quantized track.
         """
-        if hasattr(self.config, "keep_original_bpm"):
-            keep_bpm = keep_original_bpm or self.config.keep_original_bpm
-        else:
-            keep_bpm = keep_original_bpm or settings.keep_original_bpm
+        keep_bpm = keep_original_bpm or settings.keep_original_bpm
 
         # Transpose signal and take the first channel
         sr = track.sr
@@ -204,11 +179,12 @@ class CoreQuantizer(NendoGeneratePlugin):
 
         streched_signal = np.array([streched_left_channel, streched_right_channel], dtype="float32")
 
-        track_title = (
-            f"{track.resource.meta['original_filename']} - Quantized"
-            if "original_filename" in track.resource.meta
-            else "Quantized"
-        )
+        original_name = "Quantized Track"
+        if "title" in track.meta:
+            original_name = track.meta["title"]
+        elif "original_filename" in track.resource.meta:
+            original_name = track.resource.meta["original_filename"]
+        track_title = f"{original_name} ({bpm} bpm)"
 
         streched_track = self.nendo_instance.library.add_related_track_from_signal(
             signal=streched_signal,

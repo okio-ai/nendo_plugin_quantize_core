@@ -12,6 +12,7 @@ class QuantizeConfig(NendoConfig):
     """
 
     keep_original_bpm: bool = False
+    use_gpu: bool = False
 
     class Config:
         """Pydantic configuration."""

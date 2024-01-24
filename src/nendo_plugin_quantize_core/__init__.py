@@ -1,3 +1,4 @@
+"""Nendo plugin quantize core module."""
 from __future__ import annotations
 
 from .plugin import CoreQuantizer

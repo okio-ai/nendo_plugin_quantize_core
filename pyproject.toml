@@ -41,8 +41,7 @@ nendo = "^0.1.2"
 pydantic = { version = "^2.0.0, <2.5.0" }
 pydantic-settings = "^2.1.0"
 pyrubberband = "^0.3.0"
-BeatNet = "^1.1.3"
-PyAudio = "^0.2.14"
+essentia = "^2.1b6.dev1110"
 
 [tool.poetry.group.lint.dependencies]
 black = "^23.1.0"
@@ -70,6 +69,7 @@ select = [
     "F",
     # "FBT", # flake8-boolean-trap
     "G",
+    "I", # Isort
     "ICN",
     "INP",
     "ISC",
@@ -100,31 +100,27 @@ select = [
     "W",
     "YTT",
 ]
-extend-select = ["I"]
 ignore = [
-    "A001",  # Variable is shadowing a Python builtin
-    "ANN101",  # Missing type annotation for self
-    "ANN102",  # Missing type annotation for cls
-    "ANN204",  # Missing return type annotation for special method __str__
-    "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed
-    "ARG005",  # Unused lambda argument
-    "C901",  # Too complex
-    "D105",  # Missing docstring in magic method
-    "D417",  # Missing argument description in the docstring
-    "E501",  # Line too long
-    "ERA001",  # Commented out code
-    "G004",  # Logging statement uses f-string
-    "PLR0911",  # Too many return statements
-    "PLR0912",  # Too many branches
-    "PLR0913",  # Too many arguments to function call
-    "PLR0915",  # Too many statements
-    "SLF001", # Private member accessed
-    "TRY003",  # Avoid specifying long messages outside the exception class
+  "A001",  # Variable is shadowing a Python builtin
+  "ANN101",  # Missing type annotation for self
+  "ANN102",  # Missing type annotation for cls
+  "ANN204",  # Missing return type annotation for special method __str__
+  "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed
+  "ARG005",  # Unused lambda argument
+  "C901",  # Too complex
+  "D105",  # Missing docstring in magic method
+  "D417",  # Missing argument description in the docstring
+  "E501",  # Line too long
+  "ERA001",  # Commented out code
+  "G004",  # Logging statement uses f-string
+  "PLR0911",  # Too many return statements
+  "PLR0912",  # Too many branches
+  "PLR0913",  # Too many arguments to function call
+  "PLR0915",  # Too many statements
+  "SLF001", # Private member accessed
+  "TRY003",  # Avoid specifying long messages outside the exception class
 ]
-fixable = [
-    "F401", # Remove unused imports.
-    "NPY001", # Fix numpy types, which are removed in 1.24.
-]
+fixable = ["ALL"]
 unfixable = ["B"]
 exclude = [
     ".bzr",
@@ -157,7 +153,6 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 max-complexity = 10
 
 [tool.ruff.isort]
-lines-after-imports = 2
 known-first-party = ["nendo"]
 
 [tool.ruff.pydocstyle]

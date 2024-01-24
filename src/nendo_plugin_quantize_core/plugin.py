@@ -3,10 +3,9 @@ import math
 from logging import Logger
 from typing import List, Optional
 
-import librosa
+import essentia.standard as es
 import numpy as np
 import pyrubberband as pyrb
-from BeatNet.BeatNet import BeatNet
 
 from nendo import Nendo, NendoConfig, NendoGeneratePlugin, NendoTrack
 
@@ -52,43 +51,32 @@ class CoreQuantizer(NendoGeneratePlugin):
         power = int(np.log2(duration))
         yield from 2 ** np.arange(power, 0, -1)
 
-    def extract_beat_beatnet(self, filename: str):
+    def extract_beat(self, y, sr):
         """Extracts beat from a given audio signal and converts beats to frames.
 
         Args:
-            filename: The name of the target file.
+            y: The audio signal.
+            sr: The sample rate.
 
         Returns:
             A tuple of (tempo, beat_frames).
         """
-        estimator = BeatNet(
-            1,
-            mode="offline",
-            inference_model="DBN",
-            plot=[],
-            thread=False,
-            device="cuda" if settings.use_gpu is True else "cpu",
-        )
-        beat_frames = estimator.process(filename)
-        # result is a vector including beat times and downbeat identifier columns
-        # respectively with the following shape: numpy_array(num_beats, 2)
-        beat_frames = np.transpose(beat_frames)[0]
+        rhythm_extractor = es.RhythmExtractor2013(method="multifeature")
+        bpm, beats, beats_confidence, _, _ = rhythm_extractor(y)
 
-        # compute bpm
-        if len(beat_frames) < 2:
-            return 0  # Not enough beats to calculate BPM
+        # Convert beats to frames
+        # (Essentia's RhythmExtractor2013 returns beats in seconds)
+        beat_frames = (beats * sr).astype(int)
 
-        # Calculate intervals between beats
-        intervals = [
-            beat_frames[i] - beat_frames[i - 1] for i in range(1, len(beat_frames))]
+        # Ensure unique beat frames
+        beat_frames = np.unique(beat_frames)
 
-        # Average interval
-        avg_interval = sum(intervals) / len(intervals)
+        # Ensure monotonic beat frames
+        beat_frames_diff = np.diff(beat_frames)
+        if np.any(beat_frames_diff <= 0):
+            beat_frames = beat_frames_diff.cumsum()
 
-        # Convert to BPM (60 seconds per minute)
-        tempo = 60 / avg_interval
-
-        return tempo, beat_frames
+        return bpm, beat_frames
 
     def construct_time_map(
         self,
@@ -137,7 +125,7 @@ class CoreQuantizer(NendoGeneratePlugin):
         right_channel = track.signal[1, :] if len(track.signal.shape) > 1 else track.signal
 
         # Use left channel for beat extraction
-        tempo, beat_frames = self.extract_beat_beatnet(track.local())
+        tempo, beat_frames = self.extract_beat(left_channel, track.sr)
 
         # flag determines whether to keep the original bpm
         bpm = tempo if keep_bpm else bpm

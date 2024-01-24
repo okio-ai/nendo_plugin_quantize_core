@@ -1,4 +1,5 @@
 """A nendo core plugin for music quantization."""
+# ruff: noqa: PLR2004
 import math
 from logging import Logger
 from typing import List, Optional
@@ -6,6 +7,7 @@ from typing import List, Optional
 import essentia.standard as es
 import numpy as np
 import pyrubberband as pyrb
+import soundfile as sf
 
 from nendo import Nendo, NendoConfig, NendoGeneratePlugin, NendoTrack
 
@@ -121,11 +123,12 @@ class CoreQuantizer(NendoGeneratePlugin):
 
         # Transpose signal and take the first channel
         sr = track.sr
-        left_channel = track.signal[0, :] if len(track.signal.shape) > 1 else track.signal
-        right_channel = track.signal[1, :] if len(track.signal.shape) > 1 else track.signal
+        y, sr = sf.read(track.resource.src, always_2d=True, dtype='float32')
+        is_stereo = len(y.T) == 2
+        first_channel = y.T[0]
 
         # Use left channel for beat extraction
-        tempo, beat_frames = self.extract_beat(left_channel, track.sr)
+        tempo, beat_frames = self.extract_beat(first_channel, track.sr)
 
         # flag determines whether to keep the original bpm
         bpm = tempo if keep_bpm else bpm
@@ -133,39 +136,34 @@ class CoreQuantizer(NendoGeneratePlugin):
         # Generate scaling factor based on original and target tempo
         scale = tempo / bpm
 
-        # Construct time of left channel map using numpy
-        time_map = self.construct_time_map(beat_frames, scale, len(left_channel))
+        # Construct time of first channel map using numpy
+        time_map = self.construct_time_map(beat_frames, scale, len(first_channel))
 
         # Time stretch left channel
-        streched_left_channel = pyrb.timemap_stretch(left_channel, sr, time_map)
+        streched_first_channel = pyrb.timemap_stretch(first_channel, sr, time_map)
 
         # Time stretch to original length, rounded to nearest beat
-        duration = len(streched_left_channel) / sr
+        duration = len(streched_first_channel) / sr
         rounded_duration = math.ceil(duration)
         sequence = self.sequence_generator(rounded_duration)
         nearest_value = min(sequence, key=lambda x: abs(x - rounded_duration))
-        length_ratio = len(streched_left_channel) / (nearest_value * sr)
+        length_ratio = len(streched_first_channel) / (nearest_value * sr)
 
         # Preallocate final_audio for performance
-        streched_left_channel = pyrb.time_stretch(streched_left_channel, sr, length_ratio)
+        streched_first_channel = pyrb.time_stretch(streched_first_channel, sr, length_ratio)
 
-        # Construct time of left channel map using numpy
-        time_map = self.construct_time_map(beat_frames, scale, len(right_channel))
+        if is_stereo:
+            second_channel = y.T[1]
 
-        # Time stretch right channel
-        streched_right_channel = pyrb.timemap_stretch(right_channel, sr, time_map)
+            # Time stretch right channel
+            streched_second_channel = pyrb.timemap_stretch(second_channel, sr, time_map)
+            length_ratio = len(streched_second_channel) / (nearest_value * sr)
 
-        # Time stretch to original length, rounded to nearest beat
-        duration = len(streched_right_channel) / sr
-        rounded_duration = math.ceil(duration)
-        sequence = self.sequence_generator(rounded_duration)
-        nearest_value = min(sequence, key=lambda x: abs(x - rounded_duration))
-        length_ratio = len(streched_right_channel) / (nearest_value * sr)
-
-        # Preallocate final_audio for performance
-        streched_right_channel = pyrb.time_stretch(streched_right_channel, sr, length_ratio)
-
-        streched_signal = np.array([streched_left_channel, streched_right_channel], dtype="float32")
+            # Preallocate final_audio for performance
+            streched_second_channel = pyrb.time_stretch(streched_second_channel, sr, length_ratio)
+            streched_signal = np.array([streched_first_channel, streched_second_channel], dtype="float32")
+        else:
+            streched_signal = np.array(streched_first_channel, dtype="float32")
 
         original_name = "Quantized Track"
         if "title" in track.meta:

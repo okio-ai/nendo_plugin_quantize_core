@@ -26,6 +26,18 @@ class QuantizePluginTests(unittest.TestCase):
         self.assertTrue(pd[0].value, "110")
         self.assertEqual(quantized_track.signal.shape[0], 2)
 
+    def test_run_plugin_mono_fixed_bpm(self):
+        nd.library.reset(force=True)
+        # the mp3 test file is mono
+        track = nd.library.add_track(file_path="tests/assets/test.mp3")
+        quantized_track = nd.plugins.quantize_core(track=track, bpm=110)
+        pd = quantized_track.get_plugin_data(plugin_name="nendo_plugin_quantize_core", key="tempo")
+
+        self.assertTrue(quantized_track.has_related_track(track.id, direction="from"))
+        self.assertEqual(type(pd), list)
+        self.assertTrue(pd[0].value, "110")
+        self.assertEqual(quantized_track.signal.shape[0], 176400)
+
     def test_run_process_plugin_fixed_bpm(self):
         nd.library.reset(force=True)
         track = nd.library.add_track(file_path="tests/assets/test.wav")

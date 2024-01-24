@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nendo-plugin-quantize-core"
-version = "0.2.3"
+version = "0.2.4"
 authors = [
   "Aaron Abebe <aaron@okio.ai>",
   "Felix Lorenz <felix@okio.ai>",

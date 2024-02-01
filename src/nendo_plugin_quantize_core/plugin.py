@@ -7,7 +7,7 @@ from typing import List, Optional
 import essentia.standard as es
 import numpy as np
 import pyrubberband as pyrb
-import soundfile as sf
+import librosa
 
 from nendo import Nendo, NendoConfig, NendoGeneratePlugin, NendoTrack
 
@@ -121,14 +121,13 @@ class CoreQuantizer(NendoGeneratePlugin):
         """
         keep_bpm = keep_original_bpm or settings.keep_original_bpm
 
-        # Transpose signal and take the first channel
-        sr = track.sr
-        y, sr = sf.read(track.resource.src, always_2d=True, dtype='float32')
-        is_stereo = len(y.T) == 2
-        first_channel = y.T[0]
+        # essentia's Rhythmextractor2013 requires sr=44.1khz
+        y, sr = librosa.load(track.resource.src, sr=44100, mono=False, dtype="float32")
+        is_stereo = len(y.shape) == 2
+        first_channel = y[0] if is_stereo else y
 
         # Use left channel for beat extraction
-        tempo, beat_frames = self.extract_beat(first_channel, track.sr)
+        tempo, beat_frames = self.extract_beat(first_channel, sr)
 
         # flag determines whether to keep the original bpm
         bpm = tempo if keep_bpm else bpm
@@ -153,7 +152,7 @@ class CoreQuantizer(NendoGeneratePlugin):
         streched_first_channel = pyrb.time_stretch(streched_first_channel, sr, length_ratio)
 
         if is_stereo:
-            second_channel = y.T[1]
+            second_channel = y[1]
 
             # Time stretch right channel
             streched_second_channel = pyrb.timemap_stretch(second_channel, sr, time_map)
@@ -174,7 +173,7 @@ class CoreQuantizer(NendoGeneratePlugin):
 
         streched_track = self.nendo_instance.library.add_related_track_from_signal(
             signal=streched_signal,
-            sr=int(track.sr),
+            sr=int(sr),
             related_track_id=track.id,
             track_type="quantized",
             relationship_type="quantized",
